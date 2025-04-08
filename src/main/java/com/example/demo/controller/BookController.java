@@ -1,11 +1,17 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.BookDTO;
+import com.example.demo.mapper.BookMapper;
 import com.example.demo.model.Book;
 import com.example.demo.repository.BookRepository;
+import com.example.demo.exception.ResourceNotFoundException;
+
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/books")
@@ -15,32 +21,43 @@ public class BookController {
     private BookRepository bookRepository;
 
     @GetMapping
-    public List<Book> getAllBooks() {
-        return bookRepository.findAll();
+    public List<BookDTO> getAllBooks() {
+        return bookRepository.findAll()
+                .stream()
+                .map(BookMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
     @PostMapping
-    public Book createBook(@RequestBody Book book) {
-        return bookRepository.save(book);
+    public BookDTO createBook(@Valid @RequestBody BookDTO bookDTO) {
+        Book book = BookMapper.toEntity(bookDTO);
+        return BookMapper.toDTO(bookRepository.save(book));
     }
 
     @GetMapping("/{id}")
-    public Book getBookById(@PathVariable Long id) {
-        return bookRepository.findById(id).orElseThrow();
+    public BookDTO getBookById(@PathVariable Long id) {
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id " + id));
+        return BookMapper.toDTO(book);
     }
 
     @PutMapping("/{id}")
-    public Book updateBook(@PathVariable Long id, @RequestBody Book updatedBook) {
-        return bookRepository.findById(id).map(book -> {
-            book.setTitle(updatedBook.getTitle());
-            book.setAuthor(updatedBook.getAuthor());
-            book.setPublishedYear(updatedBook.getPublishedYear());
+    public BookDTO updateBook(@PathVariable Long id, @Valid @RequestBody BookDTO bookDTO) {
+        Book updated = bookRepository.findById(id).map(book -> {
+            book.setTitle(bookDTO.getTitle());
+            book.setAuthor(bookDTO.getAuthor());
+            book.setPublishedYear(bookDTO.getPublishedYear());
             return bookRepository.save(book);
-        }).orElseThrow();
+        }).orElseThrow(() -> new ResourceNotFoundException("Book not found with id " + id));
+
+        return BookMapper.toDTO(updated);
     }
 
     @DeleteMapping("/{id}")
     public void deleteBook(@PathVariable Long id) {
+        if (!bookRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Book not found with id " + id);
+        }
         bookRepository.deleteById(id);
     }
 }
