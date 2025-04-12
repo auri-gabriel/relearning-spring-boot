@@ -8,6 +8,9 @@ import com.example.demo.exception.ResourceNotFoundException;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,11 +24,13 @@ public class BookController {
     private BookRepository bookRepository;
 
     @GetMapping
-    public List<BookDTO> getAllBooks() {
-        return bookRepository.findAll()
-                .stream()
-                .map(BookMapper::toDTO)
-                .collect(Collectors.toList());
+    public Page<BookDTO> getAllBooks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Book> bookPage = bookRepository.findAll(pageable);
+        return bookPage.map(BookMapper::toDTO);
     }
 
     @PostMapping
