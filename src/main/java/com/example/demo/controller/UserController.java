@@ -1,5 +1,8 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.UserCreateRequestDTO;
+import com.example.demo.dto.UserDTO;
+import com.example.demo.mapper.UserMapper;
 import com.example.demo.model.User;
 import com.example.demo.security.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +17,9 @@ public class UserController {
     private UserDetailsServiceImpl userService;
 
     @PostMapping("/users")
-    public User createUser(@RequestBody User user) {
-        return userService.createUser(user.getUsername(), user.getPassword());
+    public UserDTO createUser(@RequestBody UserCreateRequestDTO userRequest) {
+        User createdUser = userService.createUser(userRequest.getUsername(), userRequest.getPassword());
+        return UserMapper.toDto(createdUser);
     }
 }
 
